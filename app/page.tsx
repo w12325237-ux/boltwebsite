@@ -1,65 +1,987 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+const modes = [
+  { key: "overall", name: "OVERALL", icon: "/global.png" },
+  { key: "nethpot", name: "NETHPOT", icon: "/nethpot.webp" },
+  { key: "sword", name: "SWORD", icon: "/swordd.webp" },
+  { key: "axe", name: "AXE", icon: "/axe.webp" },
+  { key: "smp", name: "SMP", icon: "/smp.webp" },
+  { key: "crystal", name: "CRYSTAL", icon: "/crystal.webp" },
+  { key: "mace", name: "MACE", icon: "/mace.webp" },
+];
+
+const gameModes = modes.filter((m) => m.key !== "overall");
+
+const tierPoints: Record<string, number> = {
+  HT1: 60,
+  LT1: 45,
+  HT2: 30,
+  LT2: 20,
+  HT3: 10,
+  LT3: 6,
+  HT4: 4,
+  LT4: 3,
+  HT5: 5,
+  LT5: 1,
+  NT: 0,
+};
+
+function getTierData(player: any, modeKey: string) {
+  const raw = player?.tiers?.[modeKey];
+
+  if (!raw) return { current: "NT", peak: "NT", points: 0 };
+
+  if (typeof raw === "string") {
+    return {
+      current: raw,
+      peak: raw,
+      points: tierPoints[raw] || 0,
+    };
+  }
+
+  const current = raw.current || raw.tier || "NT";
+  const peak = raw.peak || current;
+
+  return {
+    current,
+    peak,
+    points: raw.points ?? tierPoints[current] ?? 0,
+  };
+}
+
+function tierNumber(tier: string) {
+  if (!tier || tier === "NT") return null;
+  return tier.replace("HT", "").replace("LT", "");
+}
+
+function tierCircle(tier: string) {
+  if (!tier || tier === "NT") return "border-slate-500 bg-[#101827]";
+  if (tier.startsWith("HT")) {
+    return "border-yellow-400 bg-[#101827] shadow-[0_0_14px_rgba(255,220,0,0.55)]";
+  }
+  return "border-orange-500 bg-[#101827]";
+}
+
+function tierBadge(tier: string) {
+  if (!tier || tier === "NT") return "bg-[#6b4300] text-yellow-100";
+  if (tier.startsWith("HT")) return "bg-[#8a6000] text-yellow-200";
+  return "bg-[#a34f00] text-orange-100";
+}
+
+function skinBody(player: any) {
+  if (player?.premium === false) return "/defaultskin.png";
+  const ign = encodeURIComponent(player?.ign || "Steve");
+  return `https://render.crafty.gg/3d/bust/${ign}`;
+}
+
+function skinHead(player: any) {
+  if (player?.premium === false) return "/defaultskin.png";
+  const ign = encodeURIComponent(player?.ign || "Steve");
+  return `https://mc-heads.net/avatar/${ign}/80`;
+}
+
+function RankSkin({ player }: { player: any }) {
+  return (
+    <div className="relative h-[104px] w-[104px] overflow-hidden">
+      <img
+        src={skinBody(player)}
+        alt={player?.ign || "player"}
+        onError={(e) => {
+          e.currentTarget.src = "/defaultskin.png";
+        }}
+        className="absolute left-1/2 top-[-15px] h-[170px] w-[170px] -translate-x-1/2 object-contain"
+      />
+    </div>
+  );
+}
+
+function ProfileSkin({ player }: { player: any }) {
+  return (
+    <div className="relative h-[265px] w-[235px] overflow-hidden">
+      <img
+        src={skinBody(player)}
+        alt={player?.ign || "player"}
+        onError={(e) => {
+          e.currentTarget.src = "/defaultskin.png";
+        }}
+        className="absolute left-1/2 top-[-22px] h-[350px] w-[350px] -translate-x-1/2 object-contain"
+      />
+    </div>
+  );
+}
 
 export default function Home() {
+  const [players, setPlayers] = useState<any[]>([]);
+  const [activeMode, setActiveMode] = useState("overall");
+  const [search, setSearch] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<any | null>(null);
+  const [loadingPlayer, setLoadingPlayer] = useState<any | null>(null);
+  const [hoveredTier, setHoveredTier] = useState<string | null>(null);
+
+  const [showLoader, setShowLoader] = useState(true);
+  const [loaderFade, setLoaderFade] = useState(false);
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setLoaderFade(true);
+    }, 1800);
+
+    const removeTimer = setTimeout(() => {
+      setShowLoader(false);
+    }, 2350);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
+
+  async function loadPlayers() {
+    try {
+      const res = await fetch("/api/players", { cache: "no-store" });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : [];
+      setPlayers(Array.isArray(data) ? data : []);
+    } catch {
+      setPlayers([]);
+    }
+  }
+
+  useEffect(() => {
+    loadPlayers();
+    const timer = setInterval(loadPlayers, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const searched = useMemo(() => {
+    return players.filter((p) =>
+      String(p.ign || "").toLowerCase().includes(search.toLowerCase())
+    );
+  }, [players, search]);
+
+  const sorted = useMemo(() => {
+    return [...searched].sort((a, b) => (b.points || 0) - (a.points || 0));
+  }, [searched]);
+
+  const currentMode = modes.find((m) => m.key === activeMode);
+
+  function openProfile(player: any) {
+    setLoadingPlayer(player);
+
+    setTimeout(() => {
+      setSelectedPlayer(player);
+      setLoadingPlayer(null);
+    }, 350);
+  }
+
+  function closeProfile() {
+    setSelectedPlayer(null);
+    setLoadingPlayer(null);
+  }
+
+  function rankPosition(player: any) {
+    const index = sorted.findIndex((p) => p.ign === player.ign);
+    return index === -1 ? 1 : index + 1;
+  }
+
+  function playersForTier(num: string) {
+    return searched
+      .filter((p) => tierNumber(getTierData(p, activeMode).current) === num)
+      .sort((a, b) => {
+        const at = getTierData(a, activeMode).current;
+        const bt = getTierData(b, activeMode).current;
+
+        if (at.startsWith("HT") && bt.startsWith("LT")) return -1;
+        if (at.startsWith("LT") && bt.startsWith("HT")) return 1;
+
+        return (b.points || 0) - (a.points || 0);
+      });
+  }
+
+  async function copyServerIp() {
+    try {
+      await navigator.clipboard.writeText("boltpvp.fun");
+      alert("Server IP copied: boltpvp.fun");
+    } catch {
+      alert("Copy failed. IP: boltpvp.fun");
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <main
+      id="top"
+      className="relative min-h-screen overflow-x-hidden bg-[#100600] text-white"
+    >
+      <style jsx global>{`
+        @keyframes glitterFall {
+          0% {
+            transform: translate3d(0, -20vh, 0);
+            opacity: 0;
+          }
+
+          10% {
+            opacity: 1;
+          }
+
+          90% {
+            opacity: 1;
+          }
+
+          100% {
+            transform: translate3d(35px, 120vh, 0);
+            opacity: 0;
+          }
+        }
+
+        @keyframes topSlash {
+          0% {
+            transform: translateX(-150%) skewX(-18deg);
+            opacity: 0;
+          }
+
+          15% {
+            opacity: 0.75;
+          }
+
+          50% {
+            opacity: 1;
+          }
+
+          100% {
+            transform: translateX(210%) skewX(-18deg);
+            opacity: 0;
+          }
+        }
+
+        @keyframes modalPop {
+          from {
+            transform: scale(0.92);
+            opacity: 0;
+          }
+
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes loadAcross {
+          0% {
+            transform: translateX(-140%);
+          }
+
+          100% {
+            transform: translateX(420%);
+          }
+        }
+
+        @keyframes logoPulse {
+          0% {
+            transform: scale(1);
+          }
+
+          50% {
+            transform: scale(1.06);
+          }
+
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        .modal-pop {
+          animation: modalPop 0.2s ease-out;
+        }
+      `}</style>
+
+      {showLoader && (
+        <div
+          className={`fixed inset-0 z-[999999] flex items-center justify-center overflow-hidden bg-[#050913] transition-opacity duration-700 ${
+            loaderFade ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-8">
+            <img
+              src="/boltlogo.png"
+              alt="BoltPvP"
+              className="h-44 w-44 object-contain drop-shadow-[0_0_45px_rgba(255,210,0,0.95)]"
+              style={{ animation: "logoPulse 1.1s ease-in-out infinite" }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+            <div className="relative h-3 w-96 overflow-hidden rounded-full bg-slate-800">
+              <div className="absolute left-0 top-0 h-full w-28 animate-[loadAcross_1.15s_linear_infinite] rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-300 shadow-[0_0_18px_rgba(255,190,0,0.9)]" />
+            </div>
+
+            <p className="text-xl font-black tracking-[6px] text-yellow-300">
+              LOADING BOLTPVP
+            </p>
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+
+      <div className="fixed inset-0 z-0 bg-[#100600]" />
+      <div className="fixed inset-0 z-[1] bg-[radial-gradient(circle_at_50%_18%,rgba(120,62,0,0.75)_0%,rgba(56,22,0,0.65)_28%,rgba(20,7,0,0.95)_65%,rgba(4,1,0,1)_100%)]" />
+      <div className="fixed inset-0 z-[2] bg-[linear-gradient(180deg,rgba(255,190,0,0.10)_0%,rgba(0,0,0,0.10)_45%,rgba(0,0,0,0.45)_100%)]" />
+      <div className="fixed inset-0 z-[3] opacity-[0.045] bg-[linear-gradient(rgba(255,210,0,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,210,0,.35)_1px,transparent_1px)] bg-[size:46px_46px]" />
+
+      <div className="pointer-events-none fixed inset-0 z-[4] overflow-hidden">
+        {Array.from({ length: 180 }).map((_, i) => (
+          <span
+            key={i}
+            className="absolute rounded-full bg-yellow-200"
+            style={{
+              width: `${2 + (i % 3)}px`,
+              height: `${2 + (i % 3)}px`,
+              left: `${(i * 17) % 100}%`,
+              top: `${-20 - ((i * 31) % 100)}vh`,
+              opacity: 0.3 + (i % 5) * 0.1,
+              animationName: "glitterFall",
+              animationDuration: `${6 + (i % 8)}s`,
+              animationTimingFunction: "linear",
+              animationIterationCount: "infinite",
+              animationDelay: `-${(i * 0.47) % 10}s`,
+              boxShadow: "0 0 10px #ffd700, 0 0 18px #ffb700",
+            }}
+          />
+        ))}
+      </div>
+
+      <section className="relative z-10 min-h-screen px-6 py-6">
+        <header className="flex items-center justify-between">
+          <button
+            onClick={() => setActiveMode("overall")}
+            className="flex items-center gap-4 transition hover:scale-[1.02]"
+          >
+            <img
+              src="/boltlogo.png"
+              alt="BoltPvP"
+              className="h-20 w-20 object-contain drop-shadow-[0_0_20px_rgba(255,200,0,0.8)]"
+            />
+
+            <div className="text-left">
+              <h1 className="text-4xl font-black text-yellow-300">BoltPvP</h1>
+              <p className="tracking-[5px] text-sm text-yellow-100">
+                OFFICIAL TIERLIST
+              </p>
+            </div>
+          </button>
+
+          <a
+            href="https://discord.gg/boltpvp"
+            target="_blank"
+            className="transition hover:scale-110"
+          >
+            <img
+              src="/discord.png"
+              alt="Discord"
+              className="h-12 w-12 object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          </a>
+        </header>
+
+        <section className="mt-8 text-center">
+          <button
+            onClick={() => setActiveMode("overall")}
+            className="transition hover:scale-[1.04]"
+          >
+            <img
+              src="/boltlogo.png"
+              alt="Bolt Logo"
+              className="mx-auto h-56 w-56 object-contain drop-shadow-[0_0_40px_rgba(255,210,0,0.85)]"
+            />
+          </button>
+
+          <h2 className="mt-3 text-6xl font-black tracking-[8px] text-yellow-300 drop-shadow-[0_0_20px_rgba(255,215,0,0.8)]">
+            TIER LIST
+          </h2>
+
+          <p className="mt-3 text-xl">
+            The official rankings for BoltPvP&apos;s top players.
+          </p>
+
+          <div className="mx-auto mt-8 flex max-w-5xl flex-wrap justify-center gap-4">
+            {modes.map((mode) => (
+              <button
+                key={mode.key}
+                onClick={() => setActiveMode(mode.key)}
+                className={`flex min-w-[160px] items-center justify-center gap-3 rounded-xl border-2 px-6 py-4 font-black transition hover:scale-105 ${
+                  activeMode === mode.key
+                    ? "border-yellow-300 bg-black text-yellow-300 shadow-[0_0_20px_rgba(255,215,0,0.75)]"
+                    : "border-orange-500 bg-black/65 text-white"
+                }`}
+              >
+                <img
+                  src={mode.icon}
+                  alt={mode.name}
+                  className="h-7 w-7 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+                {mode.name}
+              </button>
+            ))}
+          </div>
+
+          <div className="mx-auto mt-8 flex w-full max-w-5xl gap-4">
+            <div className="flex flex-1 items-center rounded-xl border-2 border-orange-500 bg-black/80 px-5 py-4">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search for a player..."
+                className="w-full bg-transparent text-lg outline-none placeholder:text-yellow-100"
+              />
+              <span className="text-2xl">🔍</span>
+            </div>
+
+            <button
+              onClick={copyServerIp}
+              className="flex w-[230px] items-center justify-center rounded-xl border-2 border-yellow-300 bg-yellow-400 px-6 py-4 font-black text-black transition hover:scale-[1.02]"
+            >
+              IP: BOLTPVP.FUN
+            </button>
+          </div>
+        </section>
+
+        {activeMode === "overall" && (
+          <section
+            id="rankings"
+            className="relative mx-auto mt-10 max-w-[1500px] overflow-visible rounded-2xl border border-yellow-500/40 bg-[#081326]/95 p-5"
+          >
+            <div className="grid grid-cols-[190px_1.1fr_155px_1fr] px-4 pb-4 text-sm font-black tracking-[3px] text-yellow-100">
+              <span>#</span>
+              <span>PLAYER</span>
+              <span>REGION</span>
+              <span>TIERS</span>
+            </div>
+
+            <div className="space-y-5 overflow-visible">
+              {sorted.map((player, index) => (
+                <div
+                  key={player._id || player.ign}
+                  onClick={() => openProfile(player)}
+                  className="relative z-10 grid cursor-pointer grid-cols-[190px_1.1fr_155px_1fr] items-center rounded-xl border border-yellow-500/30 bg-[#132039]/95 px-4 py-4 transition-all duration-300 ease-out hover:z-50 hover:-translate-y-1 hover:scale-[1.012] hover:border-yellow-300 hover:bg-[#1b3158]"
+                >
+                  <div className="relative h-[90px] w-[176px] overflow-hidden rounded-none">
+                    <div
+                      className={`absolute inset-0 ${
+                        index === 0
+                          ? "bg-[#f8c82d]"
+                          : index === 1
+                          ? "bg-[#aebfc4]"
+                          : index === 2
+                          ? "bg-[#c36a2b]"
+                          : "bg-[#1c2a3e]"
+                      }`}
+                      style={{
+                        clipPath: "polygon(0 0, 100% 0, 84% 100%, 0 100%)",
+                      }}
+                    />
+
+                    {index < 3 && (
+                      <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-20 animate-[topSlash_2.6s_ease-in-out_infinite] bg-white/25 blur-[1px]" />
+                    )}
+
+                    <span className="absolute left-5 top-4 z-10 text-4xl font-black text-white drop-shadow-[0_3px_4px_rgba(0,0,0,0.8)]">
+                      {index + 1}.
+                    </span>
+
+                    <div className="absolute right-[7px] bottom-[-7px] z-10">
+                      <RankSkin player={player} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-4xl font-black">{player.ign}</h3>
+
+                      <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-4 py-1 text-lg font-black text-yellow-300">
+                        +{player.points || 0}
+                      </div>
+                    </div>
+
+                    <p className="mt-1 text-xl text-blue-300">
+                      {player.rank || "Rookie"}
+                    </p>
+                  </div>
+
+                  <span className="flex w-fit items-center gap-2 rounded-lg border border-green-400 bg-green-500/25 px-4 py-3 text-xl font-black text-green-200">
+                    <img
+                      src="/region.png"
+                      alt="region"
+                      className="h-6 w-6 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    {player.region || "AS"}
+                  </span>
+
+                  <div className="flex flex-wrap gap-4 overflow-visible">
+                    {gameModes.map((mode) => {
+                      const data = getTierData(player, mode.key);
+                      const tier = data.current;
+                      const hoverId = `${player.ign}-${mode.key}`;
+
+                      return (
+                        <div
+                          key={mode.key}
+                          className="relative flex flex-col items-center"
+                          onMouseEnter={() => setHoveredTier(hoverId)}
+                          onMouseLeave={() => setHoveredTier(null)}
+                        >
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition hover:scale-110 ${tierCircle(
+                              tier
+                            )}`}
+                          >
+                            <img
+                              src={mode.icon}
+                              alt={mode.name}
+                              className="h-7 w-7 object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+
+                          <span
+                            className={`mt-1 rounded-md px-3 py-1 text-sm font-black ${tierBadge(
+                              tier
+                            )}`}
+                          >
+                            {tier}
+                          </span>
+
+                          {hoveredTier === hoverId && (
+                            <div className="pointer-events-none absolute bottom-24 left-1/2 z-[9999] w-48 -translate-x-1/2 border border-yellow-500 bg-[#2b1200] p-4 text-left shadow-[0_0_18px_rgba(255,200,0,0.25)]">
+                              <p className="mb-2 border-b border-yellow-500 pb-2 font-black text-white">
+                                {mode.name} Rank
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Peak:
+                                <span className="float-right text-yellow-300">
+                                  {data.peak}
+                                </span>
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Current:
+                                <span className="float-right text-yellow-300">
+                                  {data.current}
+                                </span>
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Points:
+                                <span className="float-right text-yellow-300">
+                                  +{data.points}
+                                </span>
+                              </p>
+
+                              <div className="absolute bottom-[-8px] left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-yellow-500 bg-[#2b1200]" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {activeMode !== "overall" && (
+          <section className="mx-auto mt-10 max-w-[1500px]">
+            <div className="mb-7 flex items-center justify-between rounded-3xl border border-yellow-400/40 bg-[#120700]/90 px-8 py-6">
+              <div className="flex items-center gap-5">
+                <img
+                  src={currentMode?.icon || "/global.png"}
+                  alt=""
+                  className="h-12 w-12 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+
+                <h1 className="text-4xl font-black text-yellow-300">
+                  {currentMode?.name} PvP
+                </h1>
+              </div>
+
+              <div className="rounded-full border border-yellow-400/40 bg-black/60 px-6 py-3 font-black text-yellow-200">
+                🟢 Live Ranking Feed
+              </div>
+            </div>
+
+            <div className="grid grid-cols-5 gap-3">
+              {["1", "2", "3", "4", "5"].map((tierNum) => {
+                const list = playersForTier(tierNum);
+
+                return (
+                  <div
+                    key={tierNum}
+                    className="overflow-hidden rounded-t-2xl border border-yellow-500/25 bg-[#0b1426]/95"
+                  >
+                    <div
+                      className={`py-4 text-center text-3xl font-black ${
+                        tierNum === "1"
+                          ? "bg-yellow-500/30 text-yellow-300"
+                          : tierNum === "2"
+                          ? "bg-gray-500/30 text-gray-200"
+                          : tierNum === "3"
+                          ? "bg-orange-800/40 text-orange-300"
+                          : "bg-slate-800 text-blue-200"
+                      }`}
+                    >
+                      🏆 Tier {tierNum}
+                    </div>
+
+                    <div className="space-y-[4px] bg-black/20 p-1">
+                      {list.map((player) => {
+                        const data = getTierData(player, activeMode);
+                        const tier = data.current;
+
+                        return (
+                          <div
+                            key={player._id || player.ign}
+                            onClick={() => openProfile(player)}
+                            className={`flex cursor-pointer items-center justify-between border-l-4 px-3 py-3 transition hover:translate-x-2 ${
+                              tier.startsWith("HT")
+                                ? "border-yellow-300 bg-yellow-500/25"
+                                : "border-orange-500 bg-orange-500/20"
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={skinHead(player)}
+                                alt={player.ign}
+                                onError={(e) => {
+                                  e.currentTarget.src = "/defaultskin.png";
+                                }}
+                                className="h-10 w-10 rounded-sm object-cover"
+                              />
+
+                              <div>
+                                <span className="block text-lg font-black">
+                                  {player.ign}
+                                </span>
+
+                                <span className="text-xs text-green-300">
+                                  {player.region || "AS"} • {tier}
+                                </span>
+                              </div>
+                            </div>
+
+                            <span className="text-3xl font-black text-yellow-300">
+                              {tier.startsWith("HT") ? "»" : "›"}
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                      {list.length === 0 && (
+                        <div className="py-10 text-center text-sm text-gray-400">
+                          No players
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {loadingPlayer && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <div className="rounded-3xl border border-yellow-500 bg-[#120600] px-14 py-10 text-center">
+              <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
+              <p className="mt-5 text-2xl font-black text-yellow-300">
+                Loading Profile...
+              </p>
+            </div>
+          </div>
+        )}
+
+        {selectedPlayer && (
+          <div
+            onClick={closeProfile}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="modal-pop relative w-full max-w-2xl rounded-[34px] border border-yellow-700 bg-[#140700] p-6"
+            >
+              <div className="pointer-events-none absolute inset-0 opacity-[0.08] bg-[linear-gradient(rgba(255,190,0,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,190,0,.35)_1px,transparent_1px)] bg-[size:38px_38px]" />
+
+              <a
+                href="https://discord.gg/boltpvp"
+                target="_blank"
+                className="absolute left-6 top-6 z-50 transition hover:scale-110"
+              >
+                <img
+                  src="/discord.png"
+                  alt="discord"
+                  className="h-12 w-12 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              </a>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeProfile();
+                }}
+                className="absolute right-6 top-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-3xl font-black text-white transition hover:scale-110 hover:bg-orange-500"
+              >
+                ×
+              </button>
+
+              <div className="relative z-10 flex flex-col items-center">
+                <ProfileSkin player={selectedPlayer} />
+
+                <h1 className="mt-2 text-center text-5xl font-black text-white">
+                  {selectedPlayer.ign}
+                </h1>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-400 bg-emerald-500/15 px-4 py-2 text-xl font-black text-emerald-300">
+                    <img
+                      src="/region.png"
+                      alt="region"
+                      className="h-5 w-5 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                    {selectedPlayer.region || "AS"}
+                  </div>
+
+                  <div className="rounded-xl bg-yellow-500/10 px-4 py-2 text-xl font-black text-yellow-300">
+                    {selectedPlayer.rank || "Rookie"}
+                  </div>
+
+                  <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-5 py-2 text-xl font-black text-yellow-300">
+                    +{selectedPlayer.points || 0}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex h-24 w-24 rotate-45 items-center justify-center border-4 border-orange-500 bg-[#1b0a00]">
+                  <span className="-rotate-45 text-3xl font-black text-white">
+                    #{rankPosition(selectedPlayer)}
+                  </span>
+                </div>
+
+                <div className="mt-7 w-full rounded-[24px] border border-yellow-700 bg-black/40 p-5">
+                  <h2 className="mb-5 text-center text-4xl font-black tracking-[7px] text-yellow-400">
+                    TIERS
+                  </h2>
+
+                  <div className="grid grid-cols-6 place-items-center gap-4">
+                    {gameModes.map((mode) => {
+                      const data = getTierData(selectedPlayer, mode.key);
+                      const tier = data.current;
+                      const hoverId = `profile-${mode.key}`;
+
+                      return (
+                        <div
+                          key={mode.key}
+                          className="relative flex flex-col items-center"
+                          onMouseEnter={() => setHoveredTier(hoverId)}
+                          onMouseLeave={() => setHoveredTier(null)}
+                        >
+                          <div
+                            className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition hover:scale-110 ${tierCircle(
+                              tier
+                            )}`}
+                          >
+                            <img
+                              src={mode.icon}
+                              alt={mode.name}
+                              className="h-7 w-7 object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+
+                          <div
+                            className={`mt-1 rounded-lg px-3 py-1 text-sm font-black ${tierBadge(
+                              tier
+                            )}`}
+                          >
+                            {tier}
+                          </div>
+
+                          {hoveredTier === hoverId && (
+                            <div className="pointer-events-none absolute -top-40 left-1/2 z-[9999] w-44 -translate-x-1/2 border border-yellow-500 bg-[#2b1200] p-3 text-left text-sm shadow-[0_0_18px_rgba(255,200,0,0.25)]">
+                              <p className="mb-2 border-b border-yellow-500 pb-1 font-black text-white">
+                                {mode.name} Rank
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Peak:
+                                <span className="float-right text-yellow-300">
+                                  {data.peak}
+                                </span>
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Current:
+                                <span className="float-right text-yellow-300">
+                                  {data.current}
+                                </span>
+                              </p>
+
+                              <p className="font-bold text-yellow-100">
+                                Points:
+                                <span className="float-right text-yellow-300">
+                                  +{data.points}
+                                </span>
+                              </p>
+
+                              <div className="absolute bottom-[-8px] left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-yellow-500 bg-[#2b1200]" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-5 text-center text-xl font-black text-orange-300">
+                  SERVER IP: boltpvp.fun
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      <footer className="relative z-10 mt-24 border-t border-blue-900/40 bg-[linear-gradient(90deg,#020816_0%,#031022_40%,#010814_100%)] px-6 py-16">
+        <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-3">
+          <div>
+            <div className="flex items-center gap-4">
+              <img
+                src="/boltlogo.png"
+                alt="BoltPvP"
+                className="h-16 w-16 object-contain drop-shadow-[0_0_18px_rgba(255,210,0,0.45)]"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+
+              <div>
+                <h2 className="text-4xl font-black text-yellow-300">
+                  BoltPvP
+                </h2>
+                <p className="mt-1 tracking-[4px] text-sm text-yellow-100">
+                  OFFICIAL TIERLIST
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-6 max-w-md text-lg leading-9 text-slate-300">
+              The official BoltPvP tier list website for rankings, profiles and
+              competitive PvP leaderboards.
+            </p>
+
+            <button
+              onClick={copyServerIp}
+              className="mt-8 flex items-center gap-4 rounded-2xl border border-blue-500/30 bg-[#07172d] px-6 py-5 text-left transition hover:scale-[1.02] hover:border-blue-400/60"
+            >
+              <span className="text-sm font-bold uppercase tracking-[2px] text-slate-400">
+                SERVER IP
+              </span>
+
+              <span className="font-mono text-2xl font-black text-white">
+                boltpvp.fun
+              </span>
+
+              <span className="ml-1 text-xl text-blue-400">📋</span>
+            </button>
+          </div>
+
+          <div>
+            <h3 className="text-3xl font-black uppercase tracking-[2px] text-white">
+              Quick Links
+            </h3>
+
+            <div className="mt-3 h-[3px] w-10 rounded-full bg-blue-500" />
+
+            <div className="mt-8 space-y-5 text-lg">
+              <a
+                href="#top"
+                className="block text-slate-300 transition hover:text-white"
+              >
+                🏠 Home
+              </a>
+
+              <a
+                href="#rankings"
+                className="block text-slate-300 transition hover:text-white"
+              >
+                🏆 Rankings
+              </a>
+
+              <a
+                href="#top"
+                className="block text-slate-300 transition hover:text-white"
+              >
+                ⭐ Top Players
+              </a>
+
+              <a
+                href="https://discord.gg/boltpvp"
+                target="_blank"
+                className="block text-slate-300 transition hover:text-white"
+              >
+                💬 Discord
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-3xl font-black uppercase tracking-[2px] text-white">
+              Connect
+            </h3>
+
+            <div className="mt-3 h-[3px] w-10 rounded-full bg-blue-500" />
+
+            <div className="mt-8">
+              <a
+                href="https://discord.gg/boltpvp"
+                target="_blank"
+                className="flex h-20 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5 transition hover:scale-105 hover:border-blue-400/50 hover:bg-white/10"
+              >
+                <img
+                  src="/discord.png"
+                  alt="Discord"
+                  className="h-10 w-10 object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-14 max-w-7xl border-t border-white/10 pt-6 text-center text-sm text-slate-400">
+          © 2026 BoltPvP. All rights reserved.
+        </div>
+      </footer>
+    </main>
   );
 }
