@@ -700,174 +700,6 @@ export default function Home() {
               </div>
             </section>
           )}
-
-          {loadingPlayer && (
-            <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-              <div className="rounded-3xl border border-yellow-500 bg-[#120600] px-14 py-10 text-center">
-                <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
-                <p className="mt-5 text-2xl font-black text-yellow-300">
-                  Loading Profile...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {selectedPlayer && (
-            <div
-              onClick={closeProfile}
-              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
-            >
-              <div
-                onClick={(e) => e.stopPropagation()}
-                className="modal-pop relative w-full max-w-2xl rounded-[34px] border border-yellow-700 bg-[#140700] p-6"
-              >
-                <div className="pointer-events-none absolute inset-0 opacity-[0.08] bg-[linear-gradient(rgba(255,190,0,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,190,0,.35)_1px,transparent_1px)] bg-[size:38px_38px]" />
-
-                <a
-                  href="https://discord.gg/boltpvp"
-                  target="_blank"
-                  className="absolute left-6 top-6 z-50 transition hover:scale-110"
-                >
-                  <img
-                    src="/discord.png"
-                    alt="discord"
-                    className="h-12 w-12 object-contain"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
-                </a>
-
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    closeProfile();
-                  }}
-                  className="absolute right-6 top-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-3xl font-black text-white transition hover:scale-110 hover:bg-orange-500"
-                >
-                  ×
-                </button>
-
-                <div className="relative z-10 flex flex-col items-center">
-                  <ProfileSkin player={selectedPlayer} />
-
-                  <h1 className="mt-2 text-center text-5xl font-black text-white">
-                    {selectedPlayer.ign}
-                  </h1>
-
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-400 bg-emerald-500/15 px-4 py-2 text-xl font-black text-emerald-300">
-                      <img
-                        src="/region.png"
-                        alt="region"
-                        className="h-5 w-5 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
-                      {selectedPlayer.region || "AS"}
-                    </div>
-
-                    <div className="rounded-xl bg-yellow-500/10 px-4 py-2 text-xl font-black text-yellow-300">
-                      {selectedPlayer.rank || "Rookie"}
-                    </div>
-
-                    <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-5 py-2 text-xl font-black text-yellow-300">
-                      +{selectedPlayer.points || 0}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex h-24 w-24 rotate-45 items-center justify-center border-4 border-orange-500 bg-[#1b0a00]">
-                    <span className="-rotate-45 text-3xl font-black text-white">
-                      #{rankPosition(selectedPlayer)}
-                    </span>
-                  </div>
-
-                  <div className="mt-7 w-full rounded-[24px] border border-yellow-700 bg-black/40 p-5">
-                    <h2 className="mb-5 text-center text-4xl font-black tracking-[7px] text-yellow-400">
-                      TIERS
-                    </h2>
-
-                    <div className="grid grid-cols-6 place-items-center gap-4">
-                      {gameModes.map((mode) => {
-                        const data = getTierData(selectedPlayer, mode.key);
-                        const tier = data.current;
-                        const hoverId = `profile-${mode.key}`;
-
-                        return (
-                          <div
-                            key={mode.key}
-                            className="relative flex flex-col items-center"
-                            onMouseEnter={() => setHoveredTier(hoverId)}
-                            onMouseLeave={() => setHoveredTier(null)}
-                          >
-                            <div
-                              className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition hover:scale-110 ${tierCircle(
-                                tier
-                              )}`}
-                            >
-                              <img
-                                src={mode.icon}
-                                alt={mode.name}
-                                className="h-7 w-7 object-contain"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                }}
-                              />
-                            </div>
-
-                            <div
-                              className={`mt-1 rounded-lg px-3 py-1 text-sm font-black ${tierBadge(
-                                tier
-                              )}`}
-                            >
-                              {tier}
-                            </div>
-
-                            {hoveredTier === hoverId && (
-                              <div className="pointer-events-none absolute -top-40 left-1/2 z-[9999] w-44 -translate-x-1/2 border border-yellow-500 bg-[#2b1200] p-3 text-left text-sm shadow-[0_0_18px_rgba(255,200,0,0.25)]">
-                                <p className="mb-2 border-b border-yellow-500 pb-1 font-black text-white">
-                                  {mode.name} Rank
-                                </p>
-
-                                <p className="font-bold text-yellow-100">
-                                  Peak:
-                                  <span className="float-right text-yellow-300">
-                                    {data.peak}
-                                  </span>
-                                </p>
-
-                                <p className="font-bold text-yellow-100">
-                                  Current:
-                                  <span className="float-right text-yellow-300">
-                                    {data.current}
-                                  </span>
-                                </p>
-
-                                <p className="font-bold text-yellow-100">
-                                  Points:
-                                  <span className="float-right text-yellow-300">
-                                    +{data.points}
-                                  </span>
-                                </p>
-
-                                <div className="absolute bottom-[-8px] left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-yellow-500 bg-[#2b1200]" />
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 text-center text-xl font-black text-orange-300">
-                    SERVER IP: boltpvp.fun
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </section>
 
         <footer className="mt-24 border-t border-blue-900/40 bg-[linear-gradient(90deg,#020816_0%,#031022_40%,#010814_100%)] px-6 py-16">
@@ -984,6 +816,174 @@ export default function Home() {
           </div>
         </footer>
       </div>
+
+      {loadingPlayer && (
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="rounded-3xl border border-yellow-500 bg-[#120600] px-14 py-10 text-center">
+            <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-yellow-400 border-t-transparent" />
+            <p className="mt-5 text-2xl font-black text-yellow-300">
+              Loading Profile...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {selectedPlayer && (
+        <div
+          onClick={closeProfile}
+          className="fixed inset-0 z-[999999] flex items-center justify-center bg-black/75 p-4 backdrop-blur-md"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="modal-pop relative w-full max-w-2xl scale-[0.9] rounded-[34px] border border-yellow-700 bg-[#140700] p-6"
+          >
+            <div className="pointer-events-none absolute inset-0 opacity-[0.08] bg-[linear-gradient(rgba(255,190,0,.35)_1px,transparent_1px),linear-gradient(90deg,rgba(255,190,0,.35)_1px,transparent_1px)] bg-[size:38px_38px]" />
+
+            <a
+              href="https://discord.gg/boltpvp"
+              target="_blank"
+              className="absolute left-6 top-6 z-50 transition hover:scale-110"
+            >
+              <img
+                src="/discord.png"
+                alt="discord"
+                className="h-12 w-12 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            </a>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                closeProfile();
+              }}
+              className="absolute right-6 top-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-3xl font-black text-white transition hover:scale-110 hover:bg-orange-500"
+            >
+              ×
+            </button>
+
+            <div className="relative z-10 flex flex-col items-center">
+              <ProfileSkin player={selectedPlayer} />
+
+              <h1 className="mt-2 text-center text-5xl font-black text-white">
+                {selectedPlayer.ign}
+              </h1>
+
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-400 bg-emerald-500/15 px-4 py-2 text-xl font-black text-emerald-300">
+                  <img
+                    src="/region.png"
+                    alt="region"
+                    className="h-5 w-5 object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                  {selectedPlayer.region || "AS"}
+                </div>
+
+                <div className="rounded-xl bg-yellow-500/10 px-4 py-2 text-xl font-black text-yellow-300">
+                  {selectedPlayer.rank || "Rookie"}
+                </div>
+
+                <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-5 py-2 text-xl font-black text-yellow-300">
+                  +{selectedPlayer.points || 0}
+                </div>
+              </div>
+
+              <div className="mt-6 flex h-24 w-24 rotate-45 items-center justify-center border-4 border-orange-500 bg-[#1b0a00]">
+                <span className="-rotate-45 text-3xl font-black text-white">
+                  #{rankPosition(selectedPlayer)}
+                </span>
+              </div>
+
+              <div className="mt-7 w-full rounded-[24px] border border-yellow-700 bg-black/40 p-5">
+                <h2 className="mb-5 text-center text-4xl font-black tracking-[7px] text-yellow-400">
+                  TIERS
+                </h2>
+
+                <div className="grid grid-cols-6 place-items-center gap-4">
+                  {gameModes.map((mode) => {
+                    const data = getTierData(selectedPlayer, mode.key);
+                    const tier = data.current;
+                    const hoverId = `profile-${mode.key}`;
+
+                    return (
+                      <div
+                        key={mode.key}
+                        className="relative flex flex-col items-center"
+                        onMouseEnter={() => setHoveredTier(hoverId)}
+                        onMouseLeave={() => setHoveredTier(null)}
+                      >
+                        <div
+                          className={`flex h-14 w-14 items-center justify-center rounded-full border-2 transition hover:scale-110 ${tierCircle(
+                            tier
+                          )}`}
+                        >
+                          <img
+                            src={mode.icon}
+                            alt={mode.name}
+                            className="h-7 w-7 object-contain"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        </div>
+
+                        <div
+                          className={`mt-1 rounded-lg px-3 py-1 text-sm font-black ${tierBadge(
+                            tier
+                          )}`}
+                        >
+                          {tier}
+                        </div>
+
+                        {hoveredTier === hoverId && (
+                          <div className="pointer-events-none absolute -top-40 left-1/2 z-[9999] w-44 -translate-x-1/2 border border-yellow-500 bg-[#2b1200] p-3 text-left text-sm shadow-[0_0_18px_rgba(255,200,0,0.25)]">
+                            <p className="mb-2 border-b border-yellow-500 pb-1 font-black text-white">
+                              {mode.name} Rank
+                            </p>
+
+                            <p className="font-bold text-yellow-100">
+                              Peak:
+                              <span className="float-right text-yellow-300">
+                                {data.peak}
+                              </span>
+                            </p>
+
+                            <p className="font-bold text-yellow-100">
+                              Current:
+                              <span className="float-right text-yellow-300">
+                                {data.current}
+                              </span>
+                            </p>
+
+                            <p className="font-bold text-yellow-100">
+                              Points:
+                              <span className="float-right text-yellow-300">
+                                +{data.points}
+                              </span>
+                            </p>
+
+                            <div className="absolute bottom-[-8px] left-1/2 h-4 w-4 -translate-x-1/2 rotate-45 border-b border-r border-yellow-500 bg-[#2b1200]" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-5 text-center text-xl font-black text-orange-300">
+                SERVER IP: boltpvp.fun
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
