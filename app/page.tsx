@@ -70,15 +70,25 @@ function tierBadge(tier: string) {
   return "bg-[#a34f00] text-orange-100";
 }
 
+const siteTitle = "BoltPvP Tierlist";
+const siteIcon = "/boltlogo.png";
+
+function safeIgn(player: any) {
+  return encodeURIComponent(String(player?.ign || "Steve").trim() || "Steve");
+}
+
 function skinBody(player: any) {
   if (player?.premium === false) return "/defaultskin.png";
-  const ign = encodeURIComponent(player?.ign || "Steve");
-  return `https://render.crafty.gg/3d/bust/${ign}`;
+  const ign = safeIgn(player);
+
+  // mc-heads body renders are used here because the old 3D bust renderer can
+  // sometimes return broken/sideways-looking skin images for some usernames.
+  return `https://mc-heads.net/body/${ign}/180`;
 }
 
 function skinHead(player: any) {
   if (player?.premium === false) return "/defaultskin.png";
-  const ign = encodeURIComponent(player?.ign || "Steve");
+  const ign = safeIgn(player);
   return `https://mc-heads.net/avatar/${ign}/80`;
 }
 
@@ -124,6 +134,18 @@ export default function Home() {
   const [showLoader, setShowLoader] = useState(true);
   const [loaderFade, setLoaderFade] = useState(false);
   const [cursorTip, setCursorTip] = useState({ show: false, text: "", x: 0, y: 0 });
+
+  useEffect(() => {
+    document.title = siteTitle;
+
+    let icon = document.querySelector<HTMLLinkElement>("link[rel='icon']");
+    if (!icon) {
+      icon = document.createElement("link");
+      icon.rel = "icon";
+      document.head.appendChild(icon);
+    }
+    icon.href = siteIcon;
+  }, []);
 
   function tooltip(text: string) {
     return {
