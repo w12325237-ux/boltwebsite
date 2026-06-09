@@ -364,6 +364,64 @@ export default function Home() {
           }
         }
 
+        @keyframes spinSlow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        @keyframes spinReverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+
+        @keyframes logoBoom {
+          0%, 100% {
+            transform: scale(1);
+            filter: brightness(1);
+          }
+          50% {
+            transform: scale(1.08);
+            filter: brightness(1.25);
+          }
+        }
+
+        @keyframes slash {
+          0% { transform: translateX(-130%); opacity: 0; }
+          20% { opacity: 1; }
+          100% { transform: translateX(240%); opacity: 0; }
+        }
+
+        @keyframes loadFill {
+          0% { transform: scaleX(0.15); }
+          55% { transform: scaleX(0.86); }
+          100% { transform: scaleX(1); }
+        }
+
+        @keyframes barShine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+
+        @keyframes sparkFloat {
+          0%, 100% {
+            transform: translateY(0) scale(1);
+          }
+          50% {
+            transform: translateY(-18px) scale(1.4);
+          }
+        }
+
+        @keyframes modePop {
+          0%, 100% {
+            transform: translateY(0);
+            opacity: 0.55;
+          }
+          50% {
+            transform: translateY(-8px);
+            opacity: 1;
+          }
+        }
+
         .modal-pop {
           animation: modalPop 0.2s ease-out;
         }
@@ -375,25 +433,84 @@ export default function Home() {
 
       {showLoader && (
         <div
-          className={`fixed inset-0 z-[999999] flex items-center justify-center overflow-hidden bg-[#050913] transition-opacity duration-700 ${
+          className={`fixed inset-0 z-[999999] flex items-center justify-center overflow-hidden bg-[#050300] text-white transition-opacity duration-700 ${
             loaderFade ? "opacity-0" : "opacity-100"
           }`}
         >
-          <div className="flex flex-col items-center gap-8">
-            <img
-              src="/boltlogo.png"
-              alt="BoltPvP"
-              className="h-44 w-44 object-contain drop-shadow-[0_0_45px_rgba(255,210,0,0.95)]"
-              style={{ animation: "logoPulse 1.1s ease-in-out infinite" }}
-            />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(255,196,0,0.22)_0%,rgba(80,31,0,0.22)_32%,rgba(5,2,0,1)_72%)]" />
+          <div className="absolute inset-0 opacity-[0.07] bg-[linear-gradient(rgba(255,210,0,.55)_1px,transparent_1px),linear-gradient(90deg,rgba(255,210,0,.55)_1px,transparent_1px)] bg-[size:42px_42px]" />
 
-            <div className="relative h-3 w-96 overflow-hidden rounded-full bg-slate-800">
-              <div className="absolute left-0 top-0 h-full w-28 animate-[loadAcross_1.15s_linear_infinite] rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-yellow-300 shadow-[0_0_18px_rgba(255,190,0,0.9)]" />
+          <div className="pointer-events-none absolute inset-0">
+            {Array.from({ length: 90 }).map((_, i) => (
+              <span
+                key={i}
+                className="absolute rounded-full bg-yellow-200"
+                style={{
+                  width: `${2 + (i % 3)}px`,
+                  height: `${2 + (i % 3)}px`,
+                  left: `${(i * 23) % 100}%`,
+                  top: `${(i * 37) % 100}%`,
+                  opacity: 0.25 + (i % 5) * 0.12,
+                  animation: `sparkFloat ${3 + (i % 7)}s ease-in-out infinite`,
+                  animationDelay: `-${(i * 0.19) % 4}s`,
+                  boxShadow: "0 0 12px #ffd700, 0 0 25px #ff9d00",
+                }}
+              />
+            ))}
+          </div>
+
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="relative flex h-72 w-72 items-center justify-center">
+              <div className="absolute h-full w-full rounded-full border border-yellow-300/20 shadow-[0_0_70px_rgba(255,196,0,0.25)]" />
+              <div className="absolute h-[88%] w-[88%] rounded-full border-2 border-dashed border-yellow-400/50 animate-[spinSlow_8s_linear_infinite]" />
+              <div className="absolute h-[70%] w-[70%] rounded-full border border-orange-500/40 animate-[spinReverse_5s_linear_infinite]" />
+              <div className="absolute h-[52%] w-[52%] rounded-full bg-yellow-400/10 blur-2xl" />
+
+              <img
+                src="/boltlogo.png"
+                alt="BoltPvP"
+                className="relative z-10 h-40 w-40 animate-[logoBoom_1.8s_ease-in-out_infinite] object-contain drop-shadow-[0_0_55px_rgba(255,210,0,1)]"
+              />
+
+              <div className="absolute left-1/2 top-1/2 h-2 w-[125%] -translate-x-1/2 -translate-y-1/2 rotate-[-18deg] overflow-hidden rounded-full">
+                <div className="h-full w-1/2 animate-[slash_1.45s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-transparent via-yellow-300 to-transparent shadow-[0_0_25px_rgba(255,230,0,0.95)]" />
+              </div>
             </div>
 
-            <p className="text-xl font-black tracking-[6px] text-yellow-300">
-              LOADING BOLTPVP
+            <h1 className="mt-4 text-center text-5xl font-black tracking-[10px] text-yellow-300 drop-shadow-[0_0_25px_rgba(255,210,0,0.75)]">
+              BOLTPVP
+            </h1>
+
+            <p className="mt-3 text-center text-sm font-black tracking-[8px] text-yellow-100/80">
+              LOADING OFFICIAL TIERLIST
             </p>
+
+            <div className="mt-10 w-[420px] max-w-[82vw]">
+              <div className="mb-3 flex items-center justify-between text-xs font-black tracking-[3px] text-yellow-200/80">
+                <span>SYNCING RANKS</span>
+                <span>LIVE</span>
+              </div>
+
+              <div className="relative h-4 overflow-hidden rounded-full border border-yellow-400/50 bg-black/70 shadow-[0_0_24px_rgba(255,180,0,0.22)]">
+                <div className="absolute inset-0 opacity-30 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,.35)_50%,transparent_100%)] animate-[barShine_1.2s_linear_infinite]" />
+                <div className="h-full w-full origin-left animate-[loadFill_2.2s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-yellow-300 via-orange-500 to-yellow-200 shadow-[0_0_28px_rgba(255,200,0,0.95)]" />
+              </div>
+            </div>
+
+            <div className="mt-8 flex gap-3">
+              {["SWORD", "AXE", "SMP", "MACE"].map((mode, i) => (
+                <div
+                  key={mode}
+                  className="rounded-lg border border-yellow-400/25 bg-black/45 px-4 py-2 text-xs font-black tracking-[2px] text-yellow-100/75"
+                  style={{
+                    animation: `modePop 1.6s ease-in-out infinite`,
+                    animationDelay: `${i * 0.18}s`,
+                  }}
+                >
+                  {mode}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -425,7 +542,7 @@ export default function Home() {
         ))}
       </div>
 
-     <div className="relative z-10 mx-auto min-h-screen max-w-[2000px] px-6 py-6 [zoom:0.9]">
+      <div className="relative z-10 mx-auto min-h-screen max-w-[2000px] px-6 py-6 [zoom:0.9]">
         <header className="flex items-center justify-between rounded-2xl border border-yellow-500/20 bg-black/25 px-5 py-4 backdrop-blur-md">
           <button
             onClick={() => goPage("home")}
