@@ -20,24 +20,15 @@ export const metadata: Metadata = {
       "BoltPvP Tierlist — the #1 place to check the best BoltPvP players, rankings, tiers, and official PvP results.",
     url: "https://tierlist.boltpvp.online",
     siteName: "BoltPvP Tierlist",
-    images: [
-      {
-        url: "/boltlogo.png",
-        width: 1200,
-        height: 630,
-        alt: "BoltPvP Tierlist",
-      },
-    ],
     locale: "en_US",
     type: "website",
   },
 
   twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "BoltPvP Tierlist",
     description:
       "BoltPvP Tierlist — the #1 place to check the best BoltPvP players, rankings, tiers, and official PvP results.",
-    images: ["/boltlogo.png"],
   },
 };
 
