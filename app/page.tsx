@@ -89,6 +89,20 @@ function skinHead(player: any) {
   return `https://mc-heads.net/avatar/${ign}/80`;
 }
 
+function rankIcon(rank: string) {
+  const cleanRank = String(rank || "Rookie").trim().toLowerCase();
+
+  if (cleanRank.includes("master")) return "/combat_master.webp";
+  if (cleanRank.includes("ace")) return "/combat_ace.webp";
+  if (cleanRank.includes("specialist")) return "/combat_specialist.svg";
+
+  return "/rookie.svg";
+}
+
+function rankName(rank: string) {
+  return String(rank || "Rookie").trim() || "Rookie";
+}
+
 function RankSkin({ player }: { player: any }) {
   return (
     <div className="relative h-[104px] w-[104px] overflow-hidden">
@@ -192,19 +206,23 @@ export default function Home() {
     return () => clearInterval(timer);
   }, []);
 
-  const searched = useMemo(() => {
-    return players.filter((p) =>
-      String(p.ign || "").toLowerCase().includes(search.toLowerCase())
-    );
-  }, [players, search]);
+  const rankedPlayers = useMemo(() => {
+    return [...players].sort((a, b) => (b.points || 0) - (a.points || 0));
+  }, [players]);
 
-  const sorted = useMemo(() => {
-    return [...searched].sort((a, b) => (b.points || 0) - (a.points || 0));
-  }, [searched]);
+  const searchTerm = search.trim().toLowerCase();
+
+  const searched = useMemo(() => {
+    if (!searchTerm) return rankedPlayers.slice(0, 100);
+
+    return rankedPlayers.filter((p) =>
+      String(p.ign || "").toLowerCase().includes(searchTerm)
+    );
+  }, [rankedPlayers, searchTerm]);
 
   const topTen = useMemo(() => {
-    return [...players].sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 10);
-  }, [players]);
+    return rankedPlayers.slice(0, 10);
+  }, [rankedPlayers]);
 
   const totalTests = useMemo(() => {
     return players.reduce((total, player) => {
@@ -231,12 +249,14 @@ export default function Home() {
   }
 
   function rankPosition(player: any) {
-    const index = [...players].sort((a, b) => (b.points || 0) - (a.points || 0)).findIndex((p) => p.ign === player.ign);
+    const index = rankedPlayers.findIndex((p) => p.ign === player.ign);
     return index === -1 ? 1 : index + 1;
   }
 
   function playersForTier(num: string) {
-    return searched
+    const modePlayers = searchTerm ? searched : rankedPlayers;
+
+    return modePlayers
       .filter((p) => tierNumber(getTierData(p, activeMode).current) === num)
       .sort((a, b) => {
         const at = getTierData(a, activeMode).current;
@@ -295,6 +315,17 @@ export default function Home() {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
         }
+        .page-zoom {
+          zoom: 0.8;
+          width: 125%;
+        }
+        @supports not (zoom: 1) {
+          .page-zoom {
+            width: 125%;
+            transform: scale(0.8);
+            transform-origin: top left;
+          }
+        }
         .modal-pop { animation: modalPop 0.2s ease-out; }
         .hero-float { animation: floatUp 3s ease-in-out infinite; }
       `}</style>
@@ -338,7 +369,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 w-[125%] scale-[0.8] origin-top-left">
+      <div className="page-zoom relative z-10">
         <section className="min-h-screen px-6 py-6">
           <header className="flex items-center justify-between rounded-2xl border border-yellow-500/20 bg-black/25 px-5 py-4 backdrop-blur-md">
             <button onClick={() => goPage("home")} className="flex items-center gap-4 transition hover:scale-[1.02]"> 
@@ -517,22 +548,28 @@ export default function Home() {
                     </div>
 
                     <div className="space-y-5 overflow-visible">
-                      {sorted.map((player, index) => (
-                        <div key={player._id || player.ign} onClick={() => openProfile(player)} className="relative z-10 grid cursor-pointer grid-cols-[190px_1.1fr_155px_1fr] items-center rounded-xl border border-yellow-500/30 bg-[#132039]/95 px-4 py-4 transition-all duration-300 ease-out hover:z-50 hover:-translate-y-1 hover:scale-[1.012] hover:border-yellow-300 hover:bg-[#1b3158]"> 
-                          <div className="relative h-[90px] w-[176px] overflow-hidden rounded-none">
-                            <div className={`absolute inset-0 ${index === 0 ? "bg-[#f8c82d]" : index === 1 ? "bg-[#aebfc4]" : index === 2 ? "bg-[#c36a2b]" : "bg-[#1c2a3e]"}`} style={{ clipPath: "polygon(0 0, 100% 0, 84% 100%, 0 100%)" }} />
-                            {index < 3 && <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-20 animate-[topSlash_2.6s_ease-in-out_infinite] bg-white/25 blur-[1px]" />}
-                            <span className="absolute left-5 top-4 z-10 text-4xl font-black text-white drop-shadow-[0_3px_4px_rgba(0,0,0,0.8)]">{index + 1}.</span>
-                            <div className="absolute right-[7px] bottom-[-7px] z-10"><RankSkin player={player} /></div>
-                          </div>
+                      {searched.map((player) => {
+                        const actualRank = rankPosition(player);
 
-                          <div>
-                            <div className="flex items-center gap-3">
-                              <h3 className="text-4xl font-black">{player.ign}</h3>
-                              <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-4 py-1 text-lg font-black text-yellow-300">+{player.points || 0}</div>
+                        return (
+                          <div key={player._id || player.ign} onClick={() => openProfile(player)} className="relative z-10 grid cursor-pointer grid-cols-[190px_1.1fr_155px_1fr] items-center rounded-xl border border-yellow-500/30 bg-[#132039]/95 px-4 py-4 transition-all duration-300 ease-out hover:z-50 hover:-translate-y-1 hover:scale-[1.012] hover:border-yellow-300 hover:bg-[#1b3158]"> 
+                            <div className="relative h-[90px] w-[176px] overflow-hidden rounded-none">
+                              <div className={`absolute inset-0 ${actualRank === 1 ? "bg-[#f8c82d]" : actualRank === 2 ? "bg-[#aebfc4]" : actualRank === 3 ? "bg-[#c36a2b]" : "bg-[#1c2a3e]"}`} style={{ clipPath: "polygon(0 0, 100% 0, 84% 100%, 0 100%)" }} />
+                              {actualRank <= 3 && <div className="pointer-events-none absolute inset-y-0 left-0 z-[5] w-20 animate-[topSlash_2.6s_ease-in-out_infinite] bg-white/25 blur-[1px]" />}
+                              <span className="absolute left-5 top-4 z-10 text-4xl font-black text-white drop-shadow-[0_3px_4px_rgba(0,0,0,0.8)]">{actualRank}.</span>
+                              <div className="absolute right-[7px] bottom-[-7px] z-10"><RankSkin player={player} /></div>
                             </div>
-                            <p className="mt-1 text-xl text-blue-300">{player.rank || "Rookie"}</p>
-                          </div>
+
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h3 className="text-4xl font-black">{player.ign}</h3>
+                                <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-4 py-1 text-lg font-black text-yellow-300">+{player.points || 0}</div>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-xl font-black text-blue-300">
+                                <img src={rankIcon(player.rank)} alt={rankName(player.rank)} className="h-8 w-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                                <span>{rankName(player.rank)}</span>
+                              </div>
+                            </div>
 
                           <span className="flex w-fit items-center gap-2 rounded-lg border border-green-400 bg-green-500/25 px-4 py-3 text-xl font-black text-green-200">
                             <img src="/region.png" alt="region" className="h-6 w-6 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
@@ -565,7 +602,8 @@ export default function Home() {
                             })}
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 )}
@@ -687,7 +725,10 @@ export default function Home() {
                   <img src="/region.png" alt="region" className="h-5 w-5 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                   {selectedPlayer.region || "AS"}
                 </div>
-                <div className="rounded-xl bg-yellow-500/10 px-4 py-2 text-xl font-black text-yellow-300">{selectedPlayer.rank || "Rookie"}</div>
+                <div className="flex items-center gap-2 rounded-xl bg-yellow-500/10 px-4 py-2 text-xl font-black text-yellow-300">
+                  <img src={rankIcon(selectedPlayer.rank)} alt={rankName(selectedPlayer.rank)} className="h-8 w-8 object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                  {rankName(selectedPlayer.rank)}
+                </div>
                 <div className="rounded-sm border border-yellow-500 bg-[#2b1200] px-5 py-2 text-xl font-black text-yellow-300">+{selectedPlayer.points || 0}</div>
               </div>
 
