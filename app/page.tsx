@@ -425,7 +425,7 @@ export default function Home() {
         ))}
       </div>
 
-      <div className="relative z-10 mx-auto min-h-screen max-w-[1800px] px-6 py-6">
+     <div className="relative z-10 mx-auto min-h-screen max-w-[2000px] px-6 py-6 [zoom:0.9]">
         <header className="flex items-center justify-between rounded-2xl border border-yellow-500/20 bg-black/25 px-5 py-4 backdrop-blur-md">
           <button
             onClick={() => goPage("home")}
