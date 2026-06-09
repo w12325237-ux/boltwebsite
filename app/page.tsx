@@ -72,23 +72,20 @@ function tierBadge(tier: string) {
 
 const siteTitle = "BoltPvP Tierlist";
 const siteIcon = "/boltlogo.png";
+const fallbackBodySkin = "https://render.crafty.gg/3d/bust/Steve";
+const fallbackHeadSkin = "https://mc-heads.net/avatar/Steve/80";
 
 function safeIgn(player: any) {
   return encodeURIComponent(String(player?.ign || "Steve").trim() || "Steve");
 }
 
 function skinBody(player: any) {
-  if (player?.premium === false) return "/defaultskin.png";
-  const ign = safeIgn(player);
-
-  // mc-heads body renders are used here because the old 3D bust renderer can
-  // sometimes return broken/sideways-looking skin images for some usernames.
-  return `https://mc-heads.net/body/${ign}/180`;
+  const ign = player?.premium === false ? "Steve" : safeIgn(player);
+  return `https://render.crafty.gg/3d/bust/${ign}`;
 }
 
 function skinHead(player: any) {
-  if (player?.premium === false) return "/defaultskin.png";
-  const ign = safeIgn(player);
+  const ign = player?.premium === false ? "Steve" : safeIgn(player);
   return `https://mc-heads.net/avatar/${ign}/80`;
 }
 
@@ -99,7 +96,7 @@ function RankSkin({ player }: { player: any }) {
         src={skinBody(player)}
         alt={player?.ign || "player"}
         onError={(e) => {
-          e.currentTarget.src = "/defaultskin.png";
+          e.currentTarget.src = fallbackBodySkin;
         }}
         className="absolute left-1/2 top-[-15px] h-[170px] w-[170px] -translate-x-1/2 object-contain"
       />
@@ -114,7 +111,7 @@ function ProfileSkin({ player }: { player: any }) {
         src={skinBody(player)}
         alt={player?.ign || "player"}
         onError={(e) => {
-          e.currentTarget.src = "/defaultskin.png";
+          e.currentTarget.src = fallbackBodySkin;
         }}
         className="absolute left-1/2 top-[-22px] h-[350px] w-[350px] -translate-x-1/2 object-contain"
       />
@@ -407,7 +404,7 @@ export default function Home() {
                     <div className="relative z-10 flex items-center gap-7">
                       <div className="relative h-36 w-36 overflow-hidden rounded-3xl border border-yellow-400/40 bg-yellow-400/10">
                         {topTen[0] ? (
-                          <img src={skinBody(topTen[0])} alt={topTen[0].ign} onError={(e) => { e.currentTarget.src = "/defaultskin.png"; }} className="absolute left-1/2 top-[-18px] h-52 w-52 -translate-x-1/2 object-contain" />
+                          <img src={skinBody(topTen[0])} alt={topTen[0].ign} onError={(e) => { e.currentTarget.src = fallbackBodySkin; }} className="absolute left-1/2 top-[-18px] h-52 w-52 -translate-x-1/2 object-contain" />
                         ) : (
                           <img src="/boltlogo.png" alt="BoltPvP" className="h-full w-full object-contain p-6" />
                         )}
@@ -451,7 +448,7 @@ export default function Home() {
                       >
                         <span className="text-2xl font-black text-yellow-300">#{index + 1}</span>
                         <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-yellow-400/10">
-                          <img src={skinBody(player)} alt={player.ign} onError={(e) => { e.currentTarget.src = "/defaultskin.png"; }} className="absolute left-1/2 top-[-12px] h-28 w-28 -translate-x-1/2 object-contain" />
+                          <img src={skinBody(player)} alt={player.ign} onError={(e) => { e.currentTarget.src = fallbackBodySkin; }} className="absolute left-1/2 top-[-12px] h-28 w-28 -translate-x-1/2 object-contain" />
                         </div>
                         <span>
                           <span className="block text-2xl font-black text-white">{player.ign}</span>
@@ -596,7 +593,7 @@ export default function Home() {
                                 return (
                                   <div key={player._id || player.ign} onClick={() => openProfile(player)} className={`flex cursor-pointer items-center justify-between border-l-4 px-3 py-3 transition hover:translate-x-2 ${tier.startsWith("HT") ? "border-yellow-300 bg-yellow-500/25" : "border-orange-500 bg-orange-500/20"}`}> 
                                     <div className="flex items-center gap-3">
-                                      <img src={skinHead(player)} alt={player.ign} onError={(e) => { e.currentTarget.src = "/defaultskin.png"; }} className="h-10 w-10 rounded-sm object-cover" />
+                                      <img src={skinHead(player)} alt={player.ign} onError={(e) => { e.currentTarget.src = fallbackHeadSkin; }} className="h-10 w-10 rounded-sm object-cover" />
                                       <div>
                                         <span className="block text-lg font-black">{player.ign}</span>
                                         <span className="text-xs text-green-300">{player.region || "AS"} • {tier}</span>
