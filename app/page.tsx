@@ -23,7 +23,7 @@ const tierPoints: Record<string, number> = {
   LT3: 6,
   HT4: 4,
   LT4: 3,
-  HT5: 5,
+  HT5: 2,
   LT5: 1,
   NT: 0,
 };
